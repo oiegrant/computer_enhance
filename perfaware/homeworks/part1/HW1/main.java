@@ -8,92 +8,88 @@ import java.util.Map;
 
 public class main {
 
-
-
   //write each pair to file
   //write + print filegg
   //nasm your output and compare with orignal binary
   public enum OP_CODE {
-    MOV
+   mov
   }
 
   public enum REG_CODE {
-        AL,
-        CL,
-        DL,
-        BL,
-        AH,
-        CH,
-        DH,
-        BH,
-        AX,
-        CX,
-        DX,
-        BX,
-        SP,
-        BP,
-        SI,  
-        DI
+        al,
+        cl,
+        dl,
+        bl,
+        ah,
+        ch,
+        dh,
+        bh,
+        ax,
+        cx,
+        dx,
+        bx,
+        sp,
+        bp,
+        si,  
+        di
 
   }
 
   public static final HashMap<Integer,OP_CODE> opCodeMapping = new HashMap<>(Map.ofEntries(
-        Map.entry(0b00100010,OP_CODE.MOV)
+        Map.entry(0b00100010,OP_CODE.mov)
         ));
 
   public static final HashMap<Integer,REG_CODE> regCodeMapping = new HashMap<>(Map.ofEntries(
-        Map.entry(0b00000000, REG_CODE.AL),
-        Map.entry(0b00000001, REG_CODE.CL),
-        Map.entry(0b00000010, REG_CODE.DL),
-        Map.entry(0b00000011, REG_CODE.BL),
-        Map.entry(0b00000100, REG_CODE.AH),
-        Map.entry(0b00000101, REG_CODE.CH),
-        Map.entry(0b00000110, REG_CODE.DH),
-        Map.entry(0b00000111, REG_CODE.BH),
-        Map.entry(0b00001000, REG_CODE.AX),
-        Map.entry(0b00001001, REG_CODE.CX),
-        Map.entry(0b00001010, REG_CODE.DX),
-        Map.entry(0b00001011, REG_CODE.BX),
-        Map.entry(0b00001100, REG_CODE.SP),
-        Map.entry(0b00001101, REG_CODE.BP),
-        Map.entry(0b00001110, REG_CODE.SI),
-        Map.entry(0b00001111, REG_CODE.DI)
+        Map.entry(0b00000000, REG_CODE.al),
+        Map.entry(0b00000001, REG_CODE.cl),
+        Map.entry(0b00000010, REG_CODE.dl),
+        Map.entry(0b00000011, REG_CODE.bl),
+        Map.entry(0b00000100, REG_CODE.ah),
+        Map.entry(0b00000101, REG_CODE.ch),
+        Map.entry(0b00000110, REG_CODE.dh),
+        Map.entry(0b00000111, REG_CODE.bh),
+        Map.entry(0b00001000, REG_CODE.ax),
+        Map.entry(0b00001001, REG_CODE.cx),
+        Map.entry(0b00001010, REG_CODE.dx),
+        Map.entry(0b00001011, REG_CODE.bx),
+        Map.entry(0b00001100, REG_CODE.sp),
+        Map.entry(0b00001101, REG_CODE.bp),
+        Map.entry(0b00001110, REG_CODE.si),
+        Map.entry(0b00001111, REG_CODE.di)
         ));
+
+  private static boolean DEBUG = false;
+
+  private static void debug(String msg){
+    if (DEBUG) System.out.println(msg);
+  }
 
 
     public static void main(String[] args) {
-        Path filePath = Path.of("listing_0037_single_register_mov");
-
+        if(args.length < 1) {
+          System.err.println("need args");
+          System.exit(1);
+        } 
+        Path filePath = Path.of(args[0]);
         try {
-            byte[] content = Files.readAllBytes(filePath);
-            System.out.println("#######");                    
-        for (int i = 0; i < content.length; i+=2) {
 
+            System.out.println("bits 16");  
+          byte[] content = Files.readAllBytes(filePath);
+            debug("#######");                    
+        for (int i = 0; i < content.length; i+=2) {
           byte first = content[i];
           byte second = content[i+1];
-          System.out.println("1st Byte : " + Integer.toBinaryString(first & 0xFF));
-          System.out.println("2nd Byte : " + Integer.toBinaryString(second & 0xFF));
-          //get the operator - leftmost bits of first
+         //get the operator - leftmost bits of first
           //capture d flag 
           int operator = (first & 0xFF) >>> 2; //Shift right two, setting top 2 bits to 0 
           int D_FLAG = first & (1 << 1); // grab the second least significant
           int W_FLAG = first & (1 << 0); // grab the least significant
-          System.out.println("OP_CODE = " + Integer.toBinaryString(operator));
-          System.out.println("D_FLAG = " + Integer.toBinaryString(D_FLAG));
-          System.out.println("W_FLAG = " + Integer.toBinaryString(W_FLAG));
-           System.out.println("#######");         
-          //[2MOD,3REG,3R_M]
+         //[2MOD,3REG,3R_M]
           int MOD = (second & 0xFF) >>> 6;
           int REG = (((second & 0xFF) << 2) & 0xFF) >>> 5;
           int R_M = (((second & 0xFF) << 5) & 0xFF) >>> 5; //first shift left by N then shift back right
-          System.out.println("MOD = " + Integer.toBinaryString(MOD));
-          System.out.println("REG = " + Integer.toBinaryString(REG));
-          System.out.println("R_M = " + Integer.toBinaryString(R_M));
-          System.out.println("#######"); 
-
-          OP_CODE opCode = opCodeMapping.get(operator);
-          System.out.println(opCode);
-
+         OP_CODE opCode = opCodeMapping.get(operator);
+          debug(String.valueOf(opCode));
           int source = 0;
           int destination = 0;
           if(D_FLAG == 1) {
@@ -103,9 +99,8 @@ public class main {
             destination = R_M;
             source = REG;
           } else {
-            System.out.println("ERROR: D_FLAG has non-binary value of : " + Integer.toBinaryString(D_FLAG));
+            System.err.println("ERROR: D_FLAG has non-binary value of : " + Integer.toBinaryString(D_FLAG));
           }
-
           //append W to front and call to register map to get register
           REG_CODE sourceRegister = null;
           REG_CODE destinationRegister = null;
@@ -118,11 +113,20 @@ public class main {
             sourceRegister = regCodeMapping.get(source);
             destinationRegister = regCodeMapping.get(destination);
           }
-
-        System.out.println("FINAL | " + opCode + " " + destinationRegister + ", " + sourceRegister);
-        }
-
  
+          debug("1st Byte : " + Integer.toBinaryString(first & 0xFF));
+          debug("2nd Byte : " + Integer.toBinaryString(second & 0xFF));
+          debug("OP_CODE = " + Integer.toBinaryString(operator));
+          debug("D_FLAG = " + Integer.toBinaryString(D_FLAG));
+          debug("W_FLAG = " + Integer.toBinaryString(W_FLAG));
+           debug("#######");         
+          debug("MOD = " + Integer.toBinaryString(MOD));
+          debug("REG = " + Integer.toBinaryString(REG));
+          debug("R_M = " + Integer.toBinaryString(R_M));
+          debug("#######"); 
+          
+        System.out.println(opCode + " " + destinationRegister + ", " + sourceRegister); 
+        }
 
         } catch (Exception e) {
             System.err.println("Error reading file: " + e.getMessage());
@@ -138,7 +142,7 @@ public class main {
         bitArray[i] = String.format("%8s", Integer.toBinaryString(bytes[i] & 0xFF))
                                 .replace(' ', '0');
       }
-        System.out.println(Arrays.toString(bitArray));
+        debug(Arrays.toString(bitArray));
     }
 }
 
